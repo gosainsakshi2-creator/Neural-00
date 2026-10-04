@@ -7,8 +7,15 @@ const title = "NEURAL // 00 — Artificial Intelligence Visualized";
 const description =
   "An immersive interactive 3D exploration of artificial intelligence, neural systems and machine perception.";
 
+// Explicit URL wins; on Vercel fall back to the production domain it injects at build time.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(siteUrl),
   title,
   description,
   applicationName: "NEURAL // 00",
