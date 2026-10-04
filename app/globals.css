@@ -1,0 +1,434 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: #030406;
+  --color-graphite: #15181e;
+  --color-bone: #e8ecf1;
+  --color-cyan: #7fe3ff;
+  --color-electric: #4d7cff;
+  --color-violet: #9b8cff;
+
+  --font-sans: "Archivo Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Martian Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --hairline: rgb(232 236 241 / 0.12);
+  --dim: rgb(232 236 241 / 0.48);
+  --faint: rgb(232 236 241 / 0.28);
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--color-void);
+  color: var(--color-bone);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-stretch: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgb(127 227 255 / 0.25);
+}
+
+:focus-visible {
+  outline: 1px solid var(--color-cyan);
+  outline-offset: 4px;
+}
+
+.scene-canvas,
+.scene-canvas canvas {
+  touch-action: none;
+}
+
+.has-custom-cursor,
+.has-custom-cursor * {
+  cursor: none !important;
+}
+
+/* ------------------------------------------------------------------ */
+/* Type                                                                */
+/* ------------------------------------------------------------------ */
+
+@layer components {
+  /* Instrument-style label: expanded width, tiny, tracked. */
+  .t-label {
+    font-size: 10px;
+    line-height: 1.4;
+    font-weight: 460;
+    font-stretch: 118%;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .t-micro {
+    font-size: 9px;
+    line-height: 1.4;
+    font-weight: 440;
+    font-stretch: 112%;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+
+  .t-display {
+    font-weight: 200;
+    font-stretch: 125%;
+    letter-spacing: 0.02em;
+    line-height: 0.92;
+    text-transform: uppercase;
+  }
+
+  .t-body {
+    font-size: 13px;
+    line-height: 1.6;
+    font-weight: 380;
+    font-stretch: 100%;
+    letter-spacing: 0.005em;
+    color: var(--dim);
+  }
+
+  .t-num {
+    font-family: var(--font-mono);
+    font-stretch: 88%;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Bracket control: [ LABEL ] — brackets part on hover.              */
+  /* ---------------------------------------------------------------- */
+
+  .bracket {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.9em;
+    padding: 0.85em 0.4em;
+    color: var(--color-bone);
+    transition: color 400ms var(--ease-out-expo);
+  }
+  .bracket__edge {
+    font-weight: 200;
+    font-stretch: 100%;
+    color: rgb(127 227 255 / 0.65);
+    transition:
+      transform 600ms var(--ease-out-expo),
+      color 400ms var(--ease-out-expo);
+  }
+  .bracket:hover .bracket__edge,
+  .bracket:focus-visible .bracket__edge {
+    color: var(--color-cyan);
+  }
+  .bracket:hover .bracket__edge--l,
+  .bracket:focus-visible .bracket__edge--l {
+    transform: translateX(-6px);
+  }
+  .bracket:hover .bracket__edge--r,
+  .bracket:focus-visible .bracket__edge--r {
+    transform: translateX(6px);
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Floating dock controls                                            */
+  /* ---------------------------------------------------------------- */
+
+  .dock-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.7em 0.2em;
+    color: var(--dim);
+    transition: color 300ms var(--ease-out-expo);
+  }
+  .dock-btn::after {
+    content: "";
+    position: absolute;
+    left: 0.2em;
+    right: 0.2em;
+    bottom: 0.35em;
+    height: 1px;
+    background: var(--color-cyan);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 500ms var(--ease-out-expo);
+  }
+  .dock-btn:hover,
+  .dock-btn:focus-visible,
+  .dock-btn[aria-pressed="true"],
+  .dock-btn[aria-expanded="true"] {
+    color: var(--color-bone);
+  }
+  .dock-btn[aria-pressed="true"]::after,
+  .dock-btn[aria-expanded="true"]::after {
+    transform: scaleX(1);
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Node labels (rendered inside the 3D scene)                        */
+  /* ---------------------------------------------------------------- */
+
+  .node-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    white-space: nowrap;
+    color: var(--dim);
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+    pointer-events: none;
+    transition:
+      opacity 900ms var(--ease-out-expo),
+      transform 900ms var(--ease-out-expo),
+      filter 900ms var(--ease-out-expo),
+      color 300ms ease;
+  }
+  .node-label.is-shown {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    pointer-events: auto;
+  }
+  .node-label.is-hovered {
+    color: var(--color-bone);
+  }
+  .node-label__code {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-stretch: 88%;
+    color: var(--faint);
+  }
+  .node-label__name {
+    font-size: 10px;
+    font-weight: 480;
+    font-stretch: 118%;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+  .node-label__mark {
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    border: 1px solid var(--faint);
+    transition: all 600ms var(--ease-out-expo);
+  }
+  .node-label__mark.is-on {
+    border-color: var(--color-cyan);
+    background: var(--color-cyan);
+    box-shadow: 0 0 8px var(--color-cyan);
+  }
+  @media (pointer: coarse) {
+    .node-label {
+      padding: 14px 14px;
+    }
+  }
+
+  /* Tags floating in the scene */
+  .scene-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0 4px 10px;
+    white-space: nowrap;
+    border-left: 1px solid rgb(127 227 255 / 0.6);
+    color: var(--color-bone);
+    font-size: 9px;
+    font-weight: 460;
+    font-stretch: 115%;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition:
+      opacity 500ms var(--ease-out-expo),
+      transform 500ms var(--ease-out-expo);
+  }
+  .scene-tag.is-on,
+  .scene-tag--enter {
+    opacity: 1;
+    transform: none;
+  }
+  .scene-tag--enter {
+    animation: tag-in 700ms var(--ease-out-expo) both;
+  }
+  .scene-tag__mono {
+    font-family: var(--font-mono);
+    font-stretch: 88%;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: var(--dim);
+  }
+
+  .scene-layer {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    white-space: nowrap;
+    font-size: 10px;
+    font-weight: 460;
+    font-stretch: 118%;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--faint);
+    transition: color 400ms ease;
+  }
+  .scene-layer.is-done {
+    color: var(--dim);
+  }
+  .scene-layer.is-active {
+    color: var(--color-bone);
+  }
+  .scene-layer__index {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-stretch: 88%;
+    letter-spacing: 0;
+    color: var(--color-electric);
+    opacity: 0.8;
+  }
+  .scene-layer.is-active .scene-layer__index {
+    color: var(--color-cyan);
+    opacity: 1;
+  }
+
+  .agent-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    white-space: nowrap;
+    pointer-events: auto;
+    color: var(--dim);
+    animation: tag-in 900ms var(--ease-out-expo) both;
+    transition:
+      color 300ms ease,
+      opacity 400ms ease;
+  }
+  .agent-label:hover,
+  .agent-label.is-active {
+    color: var(--color-bone);
+  }
+  .agent-label.is-dim {
+    opacity: 0.45;
+  }
+  .agent-label__name {
+    font-size: 10px;
+    font-weight: 500;
+    font-stretch: 120%;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+  }
+  .agent-label__task {
+    font-size: 9px;
+    font-stretch: 100%;
+    letter-spacing: 0.04em;
+    color: var(--faint);
+  }
+  .agent-label.is-active .agent-label__task {
+    color: var(--color-cyan);
+  }
+
+  /* Live indicator */
+  .status-dot {
+    position: relative;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--color-cyan);
+    box-shadow: 0 0 10px rgb(127 227 255 / 0.8);
+  }
+  .status-dot::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 999px;
+    border: 1px solid rgb(127 227 255 / 0.5);
+    animation: dot-ring 2.4s var(--ease-out-expo) infinite;
+  }
+  .status-dot[data-state="busy"] {
+    background: var(--color-violet);
+    box-shadow: 0 0 10px rgb(155 140 255 / 0.8);
+  }
+  .status-dot[data-state="busy"]::after {
+    border-color: rgb(155 140 255 / 0.5);
+    animation-duration: 1s;
+  }
+  .status-dot[data-state="silent"] {
+    background: var(--faint);
+    box-shadow: none;
+  }
+  .status-dot[data-state="silent"]::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .caret::after {
+    content: "";
+    display: inline-block;
+    width: 0.5ch;
+    height: 1em;
+    margin-left: 2px;
+    vertical-align: -0.12em;
+    background: var(--color-cyan);
+    animation: caret 1s steps(1) infinite;
+  }
+}
+
+@keyframes tag-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes dot-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot::after,
+  .caret::after {
+    animation: none;
+  }
+  .node-label,
+  .scene-tag,
+  .agent-label {
+    filter: none !important;
+    transform: none !important;
+  }
+}
